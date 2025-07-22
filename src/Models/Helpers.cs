@@ -127,9 +127,31 @@ namespace WinCry.Models
 
             using (ZipArchive _archive = ZipFile.OpenRead(filePath))
             {
+                string fullDestDirPath = Path.GetFullPath(extractionDirectory + Path.DirectorySeparatorChar);
                 foreach (ZipArchiveEntry _entry in _archive.Entries)
                 {
-                    _entry.ExtractToFile(Path.Combine(extractionDirectory, _entry.FullName), true);
+                    string destPath = Path.GetFullPath(Path.Combine(extractionDirectory, _entry.FullName));
+                    if (!destPath.StartsWith(fullDestDirPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Skip extracting entries outside the target directory
+                        continue;
+                    }
+
+                    if (_entry.Name == "")
+                    {
+                        // Create directory for the entry
+                        Directory.CreateDirectory(destPath);
+                        continue;
+                    }
+
+                    // Extract file securely
+                    using (var fileStream = File.Create(destPath))
+                    {
+                        using (Stream entryStream = _entry.Open())
+                        {
+                            entryStream.CopyTo(fileStream);
+                        }
+                    }
                 }
             }
         }
