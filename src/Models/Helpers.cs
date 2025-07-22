@@ -90,15 +90,23 @@ namespace WinCry.Models
 
             using (ZipArchive _archive = new ZipArchive(_initialStream))
             {
+                string fullDestDirPath = Path.GetFullPath(extractionDirectory + Path.DirectorySeparatorChar);
                 foreach (ZipArchiveEntry _entry in _archive.Entries)
                 {
-                    if (_entry.Name == "")
+                    string destPath = Path.GetFullPath(Path.Combine(extractionDirectory, _entry.FullName));
+                    if (!destPath.StartsWith(fullDestDirPath, StringComparison.OrdinalIgnoreCase))
                     {
-                        Directory.CreateDirectory(Path.Combine(extractionDirectory, _entry.FullName));
+                        // Skip extracting entries outside the target directory
                         continue;
                     }
 
-                    using (var _outputFiCompressionLevel = File.Create(Path.Combine(extractionDirectory, _entry.FullName)))
+                    if (_entry.Name == "")
+                    {
+                        Directory.CreateDirectory(destPath);
+                        continue;
+                    }
+
+                    using (var _outputFiCompressionLevel = File.Create(destPath))
                     {
                         Stream _stream = _entry.Open();
                         _stream.CopyTo(_outputFiCompressionLevel);
